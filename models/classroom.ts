@@ -1,5 +1,5 @@
 export type DashboardMode = "classroom" | "security";
-export type BenchState = "normal" | "movement" | "alert" | "offline" | "unassigned";
+export type BenchState = "reported" | "unavailable" | "no-telemetry" | "unassigned";
 
 export interface Bench {
   id: string;
@@ -7,10 +7,11 @@ export interface Bench {
   row: number;
   column: number;
   deviceId?: string;
+  source?: "simulated" | "physical";
   state: BenchState;
   distanceMm?: number;
   baselineMm?: number;
-  lastSeen: string;
+  lastSeen?: string;
 }
 
 export interface ModePresentation {
