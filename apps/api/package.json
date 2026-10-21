@@ -1,0 +1,35 @@
+{
+  "name": "@sentraclass/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "lint": "eslint src/app.ts src/server.ts src/config.ts src/db src/schemas prisma.config.ts prisma/seed.ts scripts test",
+    "type-check": "prisma generate && tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test test/*.test.ts",
+    "test:db": "tsx --test test/database.integration.test.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:migrate:test": "tsx scripts/migrate-test.ts",
+    "prisma:seed": "prisma db seed"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.7.0",
+    "pg": "^8.16.3",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.5",
+    "prisma": "^7.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

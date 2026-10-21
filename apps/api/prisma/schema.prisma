@@ -1,0 +1,147 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OperatingMode {
+  classroom
+  security
+}
+
+enum DeviceSource {
+  simulated
+  physical
+}
+
+enum MeasurementStatus {
+  ok
+  out_of_range
+  signal_fail
+  timeout
+  not_ready
+}
+
+enum AlertOutput {
+  off
+  on
+}
+
+enum EventType {
+  possible_intrusion
+  device_offline
+  device_recovered
+}
+
+enum EventSeverity {
+  info
+  warning
+  critical
+}
+
+model Classroom {
+  id        String             @id @default(cuid())
+  name      String
+  mode      OperatingMode      @default(classroom)
+  rawTelemetryRetentionDays Int?
+  benches   Bench[]
+  configs   ModeConfiguration[]
+  events    Event[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([name])
+}
+
+model Bench {
+  id          String    @id @default(cuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  label       String
+  row         Int
+  column      Int
+  active      Boolean   @default(true)
+  device      Device?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([classroomId, label])
+  @@unique([classroomId, row, column])
+  @@index([classroomId, active])
+}
+
+model Device {
+  id                    String              @id @default(cuid())
+  externalId            String              @unique
+  source                DeviceSource
+  benchId               String?             @unique
+  bench                 Bench?              @relation(fields: [benchId], references: [id], onDelete: SetNull)
+  lastSeen              DateTime?
+  lastDistanceMm        Int?
+  lastMeasurementStatus MeasurementStatus?
+  readings              TelemetryReading[]
+  events                Event[]
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([source, lastSeen])
+}
+
+model ModeConfiguration {
+  id                       String        @id @default(cuid())
+  classroomId              String
+  classroom                Classroom     @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  mode                     OperatingMode
+  distanceChangeThresholdMm Int
+  persistenceSeconds       Int
+  recoverySeconds          Int
+  offlineTimeoutSeconds    Int
+  demonstrationDefault     Boolean       @default(true)
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+
+  @@unique([classroomId, mode])
+}
+
+model TelemetryReading {
+  id                String            @id @default(cuid())
+  deviceId          String
+  device            Device            @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  schemaVersion     Int
+  sequence          Int
+  observedAt        DateTime
+  receivedAt        DateTime          @default(now())
+  mode              OperatingMode
+  source            DeviceSource
+  distanceMm        Int?
+  valid             Boolean
+  status            MeasurementStatus
+  uptimeSeconds     Int?
+  alertOutput       AlertOutput?
+
+  @@unique([deviceId, sequence])
+  @@index([deviceId, receivedAt(sort: Desc)])
+  @@index([receivedAt(sort: Desc)])
+  @@index([source, receivedAt(sort: Desc)])
+}
+
+model Event {
+  id          String        @id @default(cuid())
+  classroomId String
+  classroom   Classroom     @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+  deviceId    String?
+  device      Device?       @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  type        EventType
+  severity    EventSeverity
+  description String
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+
+  @@index([classroomId, createdAt(sort: Desc)])
+  @@index([deviceId, createdAt(sort: Desc)])
+  @@index([type, createdAt(sort: Desc)])
+}
