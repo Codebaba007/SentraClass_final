@@ -1,6 +1,6 @@
 # SentraClass
 
-SentraClass is a capstone prototype for privacy-preserving classroom distance monitoring and spatial security. The frontend is a Next.js dashboard with isolated demonstration data. The backend foundation is a separate Node.js, TypeScript, Fastify, PostgreSQL, and Prisma application under `apps/api`.
+SentraClass is a capstone prototype for privacy-preserving classroom distance monitoring and spatial security. The Next.js dashboard reads classroom, bench, device, and event data from the Fastify API under `apps/api`.
 
 ## Frontend
 
@@ -11,7 +11,9 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The frontend's public demo-only credentials are `demo-admin@sentraclass.local` / `sentra-demo-only`. This browser-side sign-in is not authentication and does not protect an API. See `lib/demo-auth.ts` and the frontend section below for its limitations.
+The frontend uses `NEXT_PUBLIC_API_BASE_URL` when set; otherwise it connects to `http://127.0.0.1:4000`. To use another local API URL, set the public variable in a root `.env.local` (for example `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:4000`) and restart the frontend. This setting is only the API origin; never put database credentials or server secrets in a `NEXT_PUBLIC_` variable.
+
+Open [http://localhost:3000](http://localhost:3000). The frontend's public demo-only credentials are `demo-admin@sentraclass.local` / `sentra-demo-only`. This browser-side sign-in is not authentication and does not protect an API. The dashboard loads data once on entry and refreshes on demand; it does not poll. If the API is unavailable, it shows an error and retry action rather than substituting sample data.
 
 Existing frontend checks remain available:
 
@@ -60,6 +62,8 @@ Prisma 7 requires explicit client generation and does not automatically seed as 
 
 API scripts can also be run from `apps/api` using the local npm scripts in its `package.json`; root scripts prefixed with `api:` are shortcuts. Start the API with `npm run api:dev` and visit `http://127.0.0.1:4000/api/health`. Use `/api/health/ready` to confirm PostgreSQL connectivity.
 
+For the complete local dashboard, keep `npm run api:dev` running in one PowerShell window and run `npm run dev` from the repository root in a second window. The dashboard's initial classroom is the first classroom returned by the API; when multiple classrooms exist, a selector appears to choose another one.
+
 ## API endpoints
 
 - `GET /api/health` reports process liveness only.
@@ -71,6 +75,8 @@ API scripts can also be run from `apps/api` using the local npm scripts in its `
 - `POST /api/telemetry` validates, records, and acknowledges one versioned telemetry message.
 
 Telemetry shape, field rules, responses, and device registration behavior are documented in [`apps/api/docs/telemetry-v1.md`](apps/api/docs/telemetry-v1.md). Both simulated and physical devices use the same contract. Unknown device IDs are rejected; telemetry does not create devices. Source must match the registered device. Invalid sensor measurements may be stored with a failure status and no distance. Readings and device last-seen/last-measurement summaries are updated transactionally. Telemetry does not create intrusion events or run detection logic.
+
+The dashboard's Classroom/Security selector is a temporary local display choice because the current dashboard API has no mode update endpoint. The dashboard reports telemetry and its source, but does not infer online status, create alert states, or infer attention or psychological state. Registered devices without telemetry show “No telemetry”; empty events remain empty.
 
 ## Initial database model
 

@@ -11,6 +11,17 @@ const eventQuerySchema = (value: unknown) => {
 export function buildApp(prisma: PrismaClient): FastifyInstance {
   const app = Fastify({ logger: true, bodyLimit: 16_384 });
 
+  // Allow the local dashboard origins; this unauthenticated prototype API must
+  // not be exposed publicly.
+  app.addHook("onSend", async (_request, reply, payload) => {
+    const origin = _request.headers.origin;
+    if (origin === "http://localhost:3000" || origin === "http://127.0.0.1:3000") {
+      reply.header("access-control-allow-origin", origin);
+      reply.header("vary", "Origin");
+    }
+    return payload;
+  });
+
   app.setErrorHandler((error, request, reply) => {
     request.log.error({ err: error }, "Unhandled request error");
     reply.status(500).send({ error: { code: "internal_error", message: "An unexpected server error occurred." } });

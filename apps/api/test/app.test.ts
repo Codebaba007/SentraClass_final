@@ -5,8 +5,9 @@ import { buildApp } from "../src/app.js";
 
 test("GET /api/health reports process liveness without a database query", async () => {
   const app = buildApp({} as PrismaClient);
-  const response = await app.inject({ method: "GET", url: "/api/health" });
+  const response = await app.inject({ method: "GET", url: "/api/health", headers: { origin: "http://localhost:3000" } });
   assert.equal(response.statusCode, 200);
+  assert.equal(response.headers["access-control-allow-origin"], "http://localhost:3000");
   assert.deepEqual(response.json(), { status: "ok" });
   await app.close();
 });
